@@ -1,5 +1,7 @@
 # PetHealthAI Website
 
+> **下载到电脑后如何安装？** 请看 [让 AI 辅助安装与启动](LOCAL_SETUP_WITH_AI.md)：可直接复制的 AI 提示词、Windows/macOS/Linux 步骤、依赖与验收清单。只运行审阅工具时，无需安装整个官网依赖。
+
 PetHealthAI 产品与公司官网。产品定位是面向宠物的连续健康智能设备：通过毫米波感知、活动与位置数据，以及 PetMind 多模态 AI，把硬件、健康时间线和服务体验整合为一套系统。
 
 ## 官网 + 同帧审阅工具 / GitHub Pages
