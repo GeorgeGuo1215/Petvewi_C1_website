@@ -1,0 +1,15 @@
+{
+  "name": "imu-video-reviewer",
+  "version": "1.0.0",
+  "private": true,
+  "description": "本地同步审阅视频、IMU 波形与动作标签",
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs",
+    "dev": "node server.mjs",
+    "test": "node --check app.js && node --check local-server.mjs && node --test scripts/*.test.mjs && node scripts/check-clock.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

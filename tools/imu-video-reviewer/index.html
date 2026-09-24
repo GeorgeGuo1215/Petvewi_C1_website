@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="同步审阅视频、IMU 与动作标签，并导出修订后的 CSV。" />
+    <title>同帧 · 视频 IMU 标签审阅</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b1018'/%3E%3Cpath d='M10 37h9l5-16 8 29 7-26 5 13h10' fill='none' stroke='%23c7ff4a' stroke-width='6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand" aria-label="同帧审阅台">
+        <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+        <div><strong>同帧</strong><span>SYNC REVIEW</span></div>
+      </div>
+      <div class="session-summary" aria-live="polite">
+        <span class="status-dot" id="sessionDot"></span>
+        <span id="sessionText">示例模式 · 导入本地文件后开始审阅</span>
+      </div>
+      <div class="top-actions">
+        <button class="btn btn-quiet" id="resetBtn" type="button">清空</button>
+        <button class="btn btn-primary" id="exportBtn" type="button" disabled>导出标签 CSV</button>
+      </div>
+    </header>
+
+    <main>
+      <p class="sync-note" id="runtimeNotice" role="status">在线／静态模式：支持本地文件审阅、手动对齐及 CSV 导出；修复视频和识别画面时间需要本机服务。</p>
+      <section class="import-strip" aria-label="导入文件">
+        <label class="file-card" id="videoDrop">
+          <input type="file" id="videoInput" accept="video/*,.mp4,.mpeg,.mpg,.mov,.mkv,.webm" />
+          <span class="file-index">01</span>
+          <span class="file-icon" aria-hidden="true">▶</span>
+          <span class="file-copy"><b>视频</b><small id="videoName">选择或拖入视频文件</small></span>
+          <span class="file-state" id="videoState">未载入</span>
+        </label>
+        <label class="file-card" id="imuDrop">
+          <input type="file" id="imuInput" accept=".csv,text/csv" multiple />
+          <span class="file-index">02</span>
+          <span class="file-icon signal-icon" aria-hidden="true">〽</span>
+          <span class="file-copy"><b>IMU CSV</b><small id="imuName">可多选，按时间自动合并</small></span>
+          <span class="file-state" id="imuState">未载入</span>
+        </label>
+        <label class="file-card" id="labelDrop">
+          <input type="file" id="labelInput" accept=".csv,text/csv" />
+          <span class="file-index">03</span>
+          <span class="file-icon" aria-hidden="true">≡</span>
+          <span class="file-copy"><b>标签 CSV</b><small id="labelName">兼容 UTF-8 / GB18030</small></span>
+          <span class="file-state" id="labelState">未载入</span>
+        </label>
+      </section>
+
+      <section class="workspace-grid">
+        <article class="panel video-panel">
+          <div class="panel-head">
+            <div><span class="eyebrow">VIDEO</span><h1>视频画面</h1></div>
+            <div class="head-tools">
+              <button class="btn btn-quiet btn-small" id="repairBtn" type="button" disabled>修复视频</button>
+              <label class="select-label">倍速
+                <select id="speedSelect" aria-label="播放倍速">
+                  <option value="0.25">0.25×</option><option value="0.5">0.5×</option>
+                  <option value="1" selected>1×</option><option value="1.5">1.5×</option><option value="2">2×</option>
+                </select>
+              </label>
+            </div>
+          </div>
+          <div class="video-stage" id="videoStage">
+            <video id="video" playsinline preload="metadata"></video>
+            <button class="empty-video" id="videoPickBtn" type="button">
+              <span class="empty-play">＋</span><b>载入视频</b><small>文件仅在本机处理；自动修复需要本机服务</small>
+            </button>
+            <div class="video-error" id="videoError" hidden>
+              <b>浏览器无法播放这个视频</b>
+              <p id="videoErrorText">正在检查本地修复服务…</p>
+            </div>
+            <div class="frame-badge" id="frameBadge">00:00.000</div>
+            <div class="label-badge" id="videoLabel" hidden><span></span><b>—</b></div>
+          </div>
+          <div class="repair-info" id="repairInfo" hidden aria-live="polite">
+            <span id="repairMessage"></span>
+            <button id="cancelRepairBtn" class="btn btn-quiet btn-small" type="button" hidden>取消修复</button>
+            <a id="repairDownload" hidden>下载修复版 MP4</a>
+          </div>
+          <div class="transport">
+            <button class="icon-btn" id="prevFrameBtn" type="button" aria-label="后退 0.04 秒">│‹</button>
+            <button class="play-btn" id="playBtn" type="button" aria-label="播放或暂停">▶</button>
+            <button class="icon-btn" id="nextFrameBtn" type="button" aria-label="前进 0.04 秒">›│</button>
+            <div class="time-readout"><span id="currentTime">00:00.000</span><small>/</small><span id="durationTime">00:00.000</span></div>
+            <span class="shortcut">空格 播放 · ← → 0.04 秒</span>
+          </div>
+        </article>
+
+        <article class="panel imu-panel">
+          <div class="panel-head">
+            <div><span class="eyebrow">SENSOR</span><h2>IMU 同步窗口</h2></div>
+            <div class="range-control" role="group" aria-label="图表时间窗口">
+              <button type="button" data-window="5">±5s</button>
+              <button type="button" class="active" data-window="10">±10s</button>
+              <button type="button" data-window="30">±30s</button>
+            </div>
+          </div>
+          <div class="sync-row">
+            <div><span>视频时刻</span><strong id="syncVideoTime">00:00.000</strong></div>
+            <span class="sync-arrow">→</span>
+            <div><span>IMU 北京时间</span><strong id="syncImuTime">尚未对齐</strong></div>
+            <div class="sync-actions"><button class="btn btn-primary btn-small" id="autoSyncBtn" type="button">识别画面时间</button><button class="btn btn-quiet btn-small" id="syncBtn" type="button">手动对齐</button></div>
+          </div>
+          <div class="sync-note" aria-live="polite"><span id="syncStatus">导入视频和 IMU 后自动识别左上角日期时间（北京时间）。</span><button class="btn btn-quiet btn-small" id="cancelSyncBtn" type="button" hidden>取消识别</button></div>
+          <details id="syncEvidence" class="sync-evidence" hidden><summary>查看识别依据</summary><div id="syncEvidenceText"></div></details>
+          <div class="chart-stack">
+            <div class="chart-card">
+              <div class="chart-title"><span>ACCEL</span><b>加速度 · m/s²</b><span class="legend"><i class="x"></i>X <i class="y"></i>Y <i class="z"></i>Z</span></div>
+              <canvas id="accelChart" aria-label="三轴加速度折线图"></canvas>
+            </div>
+            <div class="chart-card">
+              <div class="chart-title"><span>GYRO</span><b>角速度 · rad/s</b><span class="legend"><i class="x"></i>X <i class="y"></i>Y <i class="z"></i>Z</span></div>
+              <canvas id="gyroChart" aria-label="三轴角速度折线图"></canvas>
+            </div>
+            <div class="no-imu" id="noImuNotice" hidden><span>∿</span><b>当前动作片段没有 IMU 数据</b><small>标签仍可正常审阅、调整和导出</small></div>
+          </div>
+        </article>
+      </section>
+
+      <section class="timeline-panel panel">
+        <div class="panel-head timeline-head">
+          <div><span class="eyebrow">ANNOTATION</span><h2>标签时间轴</h2></div>
+          <div class="timeline-stats">
+            <span><b id="segmentCount">0</b> 个片段</span>
+            <span><b id="reviewCount">0</b> 待检查</span>
+            <span><b id="changeCount">0</b> 处修改</span>
+          </div>
+        </div>
+        <div class="ruler" id="ruler"></div>
+        <div class="segments-track" id="segmentsTrack" aria-label="标签片段时间轴"></div>
+        <input class="scrubber" id="scrubber" type="range" min="0" max="100" step="0.01" value="0" aria-label="视频时间轴" />
+      </section>
+
+      <section class="review-grid">
+        <aside class="panel segment-list-panel">
+          <div class="panel-head compact">
+            <div><span class="eyebrow">QUEUE</span><h2>片段列表</h2></div>
+            <select id="segmentFilter" aria-label="筛选标签片段">
+              <option value="all">全部</option><option value="review">仅待检查</option><option value="changed">仅已修改</option>
+            </select>
+          </div>
+          <div class="segment-list" id="segmentList"></div>
+        </aside>
+
+        <article class="panel editor-panel">
+          <div class="panel-head compact">
+            <div><span class="eyebrow">CURRENT SEGMENT</span><h2 id="editorTitle">选择一个片段</h2></div>
+            <div class="editor-nav">
+              <button class="icon-btn" id="prevSegmentBtn" type="button" aria-label="上一片段">←</button>
+              <button class="icon-btn" id="nextSegmentBtn" type="button" aria-label="下一片段">→</button>
+            </div>
+          </div>
+          <form id="labelForm" class="label-form">
+            <fieldset id="editorFields" disabled>
+              <div class="form-row time-fields">
+                <label>开始时间<input id="startInput" type="number" min="0" step="0.001" required /></label>
+                <label>结束时间<input id="endInput" type="number" min="0" step="0.001" required /></label>
+                <button class="btn btn-quiet mark-btn" id="markStartBtn" type="button">当前帧设为开始</button>
+                <button class="btn btn-quiet mark-btn" id="markEndBtn" type="button">当前帧设为结束</button>
+              </div>
+              <div class="form-row three-col">
+                <label>中文标签<input id="labelZhInput" type="text" placeholder="例如：睡觉" /></label>
+                <label>英文标签<input id="labelEnInput" type="text" placeholder="sleeping" /></label>
+                <label>类别 ID<input id="classIdInput" type="text" inputmode="numeric" /></label>
+              </div>
+              <div class="form-row three-col">
+                <label>检查状态<select id="statusInput"><option value="review">待检查</option><option value="confirmed">已确认</option><option value="rejected">已排除</option></select></label>
+                <label>置信度<select id="confidenceInput"><option value="low">低</option><option value="medium">中</option><option value="high">高</option></select></label>
+                <label class="candidate-label"><span>训练候选</span><span class="switch"><input id="candidateInput" type="checkbox" /><i></i><b>可用于训练</b></span></label>
+              </div>
+              <label>备注<textarea id="notesInput" rows="3" placeholder="记录动作、遮挡、边界等审阅信息"></textarea></label>
+              <div class="editor-footer">
+                <div class="coverage" id="coverageStatus"><i></i><span>等待载入数据</span></div>
+                <div>
+                  <button class="btn btn-quiet" id="revertBtn" type="button">撤销本段修改</button>
+                  <button class="btn btn-primary" id="saveBtn" type="submit">保存本段</button>
+                </div>
+              </div>
+            </fieldset>
+          </form>
+        </article>
+      </section>
+    </main>
+
+    <dialog id="syncDialog">
+      <form method="dialog" class="dialog-card" id="syncForm">
+        <div class="dialog-head"><span class="eyebrow">TIME ANCHOR</span><h2>设置视频与 IMU 对齐</h2><button value="cancel" aria-label="关闭">×</button></div>
+        <p>把视频中的一个时刻绑定到对应的 IMU 北京时间。设置后，播放头会同时驱动图表。</p>
+        <div class="anchor-grid">
+          <label>视频时刻（秒）<input id="anchorVideoInput" type="number" min="0" step="0.001" /></label>
+          <label>对应 IMU 北京时间<input id="anchorImuInput" type="datetime-local" step="0.001" /></label>
+        </div>
+        <div class="quick-anchor" id="quickAnchor"></div>
+        <div class="dialog-actions"><button class="btn btn-quiet" value="cancel">取消</button><button class="btn btn-primary" id="confirmSyncBtn" value="default">应用对齐</button></div>
+      </form>
+    </dialog>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="./clock-sync.js"></script>
+    <script src="./review-data.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>

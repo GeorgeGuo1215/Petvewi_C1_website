@@ -1,0 +1,226 @@
+@import "tailwindcss";
+
+:root {
+  --bone: #f4f0e9;
+  --paper: #f8f6f1;
+  --ink: #302e2b;
+  --forest: #655d50;
+  --sage: #e5e5db;
+  --signal: #dfcfad;
+  --warmth: #e4d5c5;
+  --background: var(--bone);
+  --foreground: var(--ink);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-body);
+  --font-serif: var(--font-display);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  background: var(--bone);
+}
+
+body {
+  margin: 0;
+  background: var(--bone);
+  color: var(--ink);
+  font-family: var(--font-body), "PingFang SC", "Hiragino Sans GB", sans-serif;
+  text-rendering: optimizeLegibility;
+}
+
+html:lang(zh-CN) body {
+  font-family: var(--font-body), "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+}
+
+html:lang(zh-TW) body {
+  font-family: var(--font-body), "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+.display-heading {
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+}
+
+:focus-visible {
+  outline: 2px solid #8c7954;
+  outline-offset: 4px;
+}
+
+.editorial-copy {
+  text-wrap: pretty;
+}
+
+html:lang(zh-CN) .display-heading,
+html:lang(zh-TW) .display-heading {
+  letter-spacing: -0.035em;
+  line-height: 1.04;
+}
+
+html:lang(zh-CN) .display-heading--wide,
+html:lang(zh-TW) .display-heading--wide {
+  font-size: clamp(2.6rem, 6vw, 6.4rem);
+}
+
+html:lang(zh-CN) .display-heading--compact,
+html:lang(zh-TW) .display-heading--compact {
+  font-size: clamp(2.6rem, 4.7vw, 5.4rem);
+}
+
+html:lang(zh-CN) .display-heading--team,
+html:lang(zh-TW) .display-heading--team {
+  font-size: clamp(3.2rem, 7.5vw, 8rem);
+}
+
+html:lang(zh-CN) .editorial-copy,
+html:lang(zh-TW) .editorial-copy {
+  font-family: var(--font-body), "PingFang SC", "PingFang TC", sans-serif;
+  font-style: normal;
+  letter-spacing: -0.015em;
+  line-height: 1.45;
+}
+
+html:lang(zh-CN) .eyebrow-label,
+html:lang(zh-TW) .eyebrow-label {
+  letter-spacing: 0.08em;
+  text-transform: none;
+}
+
+html:lang(zh-CN) .reading-title,
+html:lang(zh-TW) .reading-title {
+  letter-spacing: -0.02em;
+  line-height: 1.28;
+}
+
+@supports (word-break: auto-phrase) {
+  html:lang(zh-CN) .display-heading,
+  html:lang(zh-TW) .display-heading {
+    word-break: auto-phrase;
+  }
+}
+
+button,
+a,
+input {
+  -webkit-tap-highlight-color: transparent;
+}
+
+img,
+video {
+  -webkit-user-drag: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+button,
+a {
+  outline-offset: 4px;
+}
+
+::selection {
+  background: var(--signal);
+  color: var(--ink);
+}
+
+.display-heading::selection,
+.display-heading *::selection,
+.hero-wordmark::selection,
+.hero-wordmark *::selection {
+  background: transparent;
+  color: #5f8c21;
+}
+
+.paper-grid {
+  background-image:
+    linear-gradient(rgba(48, 46, 43, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(48, 46, 43, 0.045) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: linear-gradient(to bottom, black, transparent 92%);
+}
+
+.paper-grid-dark {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+  background-size: 46px 46px;
+}
+
+.heartbeat-mini {
+  background-image: url("data:image/svg+xml,%3Csvg width='120' height='38' viewBox='0 0 120 38' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 21H22L28 8L37 32L46 16L52 21H72L78 12L86 27L94 18L101 21H119' stroke='%23315A49' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+}
+
+.signal-trace {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: trace-draw 2.2s ease-in-out infinite;
+}
+
+@keyframes trace-draw {
+  0% {
+    stroke-dashoffset: 1;
+    opacity: 0.35;
+  }
+  42%,
+  78% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: -1;
+    opacity: 0.2;
+  }
+}
+
+@keyframes soft-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.55;
+  }
+  50% {
+    transform: scale(1.04);
+    opacity: 0.85;
+  }
+}
+
+@media (max-width: 640px) {
+  html:lang(en) .display-heading--team {
+    font-size: clamp(2.4rem, 10vw, 3.2rem);
+    line-height: 1.06;
+    letter-spacing: -0.05em;
+  }
+
+  .paper-grid,
+  .paper-grid-dark {
+    background-size: 32px 32px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}

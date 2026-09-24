@@ -1,0 +1,17 @@
+.DS_Store
+node_modules/
+.local-data/
+.local-tools/
+*.log
+
+# 本地数据与视频不提交到 GitHub
+*.mp4
+*.mov
+*.mkv
+*.mpeg
+*.mpg
+*.webm
+*.csv
+*.tsv
+data/
+samples/
